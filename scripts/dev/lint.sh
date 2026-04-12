@@ -7,7 +7,7 @@ hadolint worker/Dockerfile
 hadolint result/Dockerfile
 
 # Lint vote (Java)
-cd services/vote
+cd ../vote
 mvn checkstyle:check
 
 # Lint worker (Go)

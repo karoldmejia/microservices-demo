@@ -20,13 +20,13 @@ jobs:
         run: ./scripts/dev/lint.sh
       
       - name: Unit tests - Vote (Java)
-        run: cd services/vote && mvn test
+        run: cd vote && mvn test
       
       - name: Unit tests - Worker (Go)
-        run: cd services/worker && go test -v ./...
+        run: cd worker && go test -v ./...
       
       - name: Unit tests - Result (Node.js)
-        run: cd services/result && npm test
+        run: cd result && npm test
 
   security-scan:
     runs-on: ubuntu-latest
