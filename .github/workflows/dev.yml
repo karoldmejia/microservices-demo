@@ -1,0 +1,75 @@
+name: Development Pipeline
+
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [feature/*, bugfix/*]
+
+env:
+  REGISTRY: ghcr.io
+  MONOREPO: true
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run linters
+        run: ./scripts/dev/lint.sh
+      
+      - name: Unit tests - Vote (Java)
+        run: cd services/vote && mvn test
+      
+      - name: Unit tests - Worker (Go)
+        run: cd services/worker && go test -v ./...
+      
+      - name: Unit tests - Result (Node.js)
+        run: cd services/result && npm test
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Scan Dockerfiles with Trivy
+        run: |
+          trivy config --severity HIGH,CRITICAL docker/
+      
+      - name: Scan dependencies
+        run: |
+          trivy fs --scanners vuln .
+
+  build-and-deploy-dev:
+    needs: [lint-and-test, security-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build and push images
+        run: |
+					docker build -t $REGISTRY/vote:dev-$GITHUB_SHA ./vote
+					docker push $REGISTRY/vote:dev-$GITHUB_SHA
+					
+					docker build -t $REGISTRY/worker:dev-$GITHUB_SHA ./worker
+					docker push $REGISTRY/worker:dev-$GITHUB_SHA
+					
+					docker build -t $REGISTRY/result:dev-$GITHUB_SHA ./result
+					docker push $REGISTRY/result:dev-$GITHUB_SHA
+      
+      - name: Deploy to Okteto Dev Environment
+        run: |
+          ./scripts/dev/deploy-dev.sh vote
+          ./scripts/dev/deploy-dev.sh worker
+          ./scripts/dev/deploy-dev.sh result
+      
+      - name: Run integration tests
+        run: ./scripts/dev/integration-test.sh

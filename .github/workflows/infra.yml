@@ -1,0 +1,53 @@
+name: Infrastructure Pipeline
+
+on:
+  pull_request:
+    paths:
+      - 'infrastructure/**'
+      - 'scripts/infra/**'
+  push:
+    branches: [main]
+    paths:
+      - 'infrastructure/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install tools
+        run: |
+          helm plugin install https://github.com/databus23/helm-diff
+          curl -L https://github.com/zegl/kube-score/releases/download/v1.17.0/kube-score_1.17.0_linux_amd64 -o kube-score
+          chmod +x kube-score
+          sudo mv kube-score /usr/local/bin/
+          pip install checkov
+      
+      - name: Validate Helm chart
+        run: ./scripts/infra/validate-chart.sh
+      
+      - name: Dry-run upgrade
+        run: ./scripts/infra/dry-run-upgrade.sh
+      
+      - name: Security scan with Trivy
+        run: |
+          trivy config ./infrastructure
+
+  gitops-sync:
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Update ArgoCD manifests
+        run: |
+          # Actualizar el repo de configuración de ArgoCD
+          git clone https://github.com/your-org/gitops-config
+          cd gitops-config
+          # Actualizar el tag del chart o los valores
+          yq eval '.spec.source.targetRevision = "'$GITHUB_SHA'"' -i environments/production/infrastructure.yaml
+          git add .
+          git commit -m "Update infrastructure to $GITHUB_SHA"
+          git push
