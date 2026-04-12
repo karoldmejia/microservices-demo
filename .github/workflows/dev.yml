@@ -28,23 +28,23 @@ jobs:
       - name: Unit tests - Result (Node.js)
         run: cd services/result && npm test
 
-security-scan:
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Run Trivy vulnerability scanner (filesystem)
-      uses: aquasecurity/trivy-action@0.20.0
-      with:
-        scan-type: fs
-        severity: HIGH,CRITICAL
+      - name: Run Trivy vulnerability scanner (filesystem)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: fs
+          severity: HIGH,CRITICAL
 
-    - name: Run Trivy vulnerability scanner (config)
-      uses: aquasecurity/trivy-action@0.20.0
-      with:
-        scan-type: config
-        scan-ref: docker/
-        severity: HIGH,CRITICAL
+      - name: Run Trivy vulnerability scanner (config)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: config
+          scan-ref: docker/
+          severity: HIGH,CRITICAL
 
   build-and-deploy-dev:
     needs: [lint-and-test, security-scan]
