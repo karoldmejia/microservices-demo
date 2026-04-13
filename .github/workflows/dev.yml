@@ -99,32 +99,22 @@ jobs:
       - name: Deploy infrastructure
         run: |
           kubectl create namespace infrastructure || true
-
           helm upgrade --install infrastructure ./infrastructure \
             --namespace infrastructure \
             --set postgresql.persistence.enabled=false \
             --set kafka.persistence.enabled=false
 
-      - name: Build Docker images
+      - name: Deploy services
         run: |
-          docker build -t vote:dev ./vote
-          docker build -t worker:dev ./worker
-          docker build -t result:dev ./result
+          helm upgrade --install vote ./vote/chart --namespace infrastructure
+          helm upgrade --install worker ./worker/chart --namespace infrastructure
+          helm upgrade --install result ./result/chart --namespace infrastructure
 
-      - name: Deploy vote service
+      - name: Wait for deployments
         run: |
-          helm upgrade --install vote ./vote/chart \
-            --set image.tag=dev-$GITHUB_SHA
-
-      - name: Deploy worker service
-        run: |
-          helm upgrade --install worker ./worker/chart \
-            --set image.tag=dev-$GITHUB_SHA
-
-      - name: Deploy result service
-        run: |
-          helm upgrade --install result ./result/chart \
-            --set image.tag=dev-$GITHUB_SHA
+          kubectl wait --for=condition=available deployment/vote -n infrastructure --timeout=120s
+          kubectl wait --for=condition=available deployment/worker -n infrastructure --timeout=120s
+          kubectl wait --for=condition=available deployment/result -n infrastructure --timeout=120s
 
       - name: Integration tests
         run: ./scripts/dev/integration-test.sh
