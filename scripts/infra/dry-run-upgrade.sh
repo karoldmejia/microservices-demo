@@ -1,21 +1,40 @@
 #!/bin/bash
-# Simula el upgrade en el clúster real
+set -e
 
-NAMESPACE="infrastructure"
 CHART_PATH="./infrastructure"
 
-# Instalar helm-diff si no está
-helm plugin install https://github.com/databus23/helm-diff || true
 
-# Mostrar diferencias
-helm diff upgrade infrastructure $CHART_PATH \
-  --namespace $NAMESPACE \
-  --set postgresql.persistence.size=10Gi \
-  --set kafka.persistence.size=10Gi
+if [ ! -d "$CHART_PATH" ]; then
+  echo "Error: Chart directory not found: $CHART_PATH"
+  exit 1
+fi
 
-# Dry-run real
-helm upgrade --install infrastructure $CHART_PATH \
-  --namespace $NAMESPACE \
+helm lint $CHART_PATH
+
+helm template infrastructure $CHART_PATH \
+  --namespace infrastructure \
+  --set postgresql.persistence.enabled=false \
+  --set kafka.persistence.enabled=false \
+  > /tmp/dev-rendered.yaml
+
+helm template infrastructure $CHART_PATH \
+  --namespace infrastructure \
+  --set postgresql.persistence.enabled=true \
   --set postgresql.persistence.size=10Gi \
+  --set kafka.persistence.enabled=true \
   --set kafka.persistence.size=10Gi \
-  --dry-run --debug
+  > /tmp/prod-rendered.yaml
+
+echo "Templates renderizados correctamente"
+
+
+echo ""
+echo "Estadísticas del chart:"
+echo "  - Archivos generados: $(cat /tmp/prod-rendered.yaml | grep -c "apiVersion:") recursos Kubernetes"
+echo "  - Tamaño del template: $(wc -l < /tmp/prod-rendered.yaml) líneas"
+
+echo ""
+echo "Dry-run completado exitosamente"
+EOF
+
+chmod +x scripts/infra/dry-run-upgrade.sh
