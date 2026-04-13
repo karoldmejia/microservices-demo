@@ -15,7 +15,7 @@ postgresql:
     storageClass: ""
   
   service:
-    port: 5432
+    port: 5433
 
 kafka:
   image:
