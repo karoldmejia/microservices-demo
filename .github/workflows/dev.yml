@@ -57,12 +57,23 @@ jobs:
           scan-type: fs
           severity: HIGH,CRITICAL
 
-      - name: Run Trivy vulnerability scanner (config)
+      - name: Scan Vote
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: config
-          scan-ref: docker/
-          severity: HIGH,CRITICAL
+          scan-ref: ./vote
+
+      - name: Scan Worker
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: ./worker
+
+      - name: Scan Result
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: ./result
 
   build-and-deploy-dev:
     needs: [lint-and-test, security-scan]
