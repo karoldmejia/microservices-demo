@@ -1,40 +1,22 @@
 #!/bin/bash
 set -e
 
+NAMESPACE="infrastructure"
 CHART_PATH="./infrastructure"
 
-
-if [ ! -d "$CHART_PATH" ]; then
-  echo "Error: Chart directory not found: $CHART_PATH"
-  exit 1
-fi
-
-helm lint $CHART_PATH
+echo "🔍 Rendering Helm templates..."
 
 helm template infrastructure $CHART_PATH \
-  --namespace infrastructure \
-  --set postgresql.persistence.enabled=false \
-  --set kafka.persistence.enabled=false \
-  > /tmp/dev-rendered.yaml
-
-helm template infrastructure $CHART_PATH \
-  --namespace infrastructure \
-  --set postgresql.persistence.enabled=true \
+  --namespace $NAMESPACE \
   --set postgresql.persistence.size=10Gi \
-  --set kafka.persistence.enabled=true \
-  --set kafka.persistence.size=10Gi \
-  > /tmp/prod-rendered.yaml
+  --set kafka.persistence.size=10Gi > rendered.yaml
 
-echo "Templates renderizados correctamente"
+echo "Helm template OK"
 
+echo "Validating with kube-score..."
+kube-score score rendered.yaml || true
 
-echo ""
-echo "Estadísticas del chart:"
-echo "  - Archivos generados: $(cat /tmp/prod-rendered.yaml | grep -c "apiVersion:") recursos Kubernetes"
-echo "  - Tamaño del template: $(wc -l < /tmp/prod-rendered.yaml) líneas"
+echo "Validating with kubectl (client-side)..."
+kubectl apply --dry-run=client -f rendered.yaml
 
-echo ""
-echo "Dry-run completado exitosamente"
-EOF
-
-chmod +x scripts/infra/dry-run-upgrade.sh
+echo "Dry-run validation OK"
