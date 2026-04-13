@@ -34,17 +34,9 @@ jobs:
           curl -L https://github.com/zegl/kube-score/releases/download/v1.17.0/kube-score_1.17.0_linux_amd64 -o kube-score
           chmod +x kube-score
           sudo mv kube-score /usr/local/bin/
-          kube-score version
       
       - name: Install checkov
-        run: |
-          pip install checkov
-          checkov --version
-      
-      - name: Install Trivy
-        run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.49.0
-          trivy --version
+        run: pip install checkov
       
       - name: Validate Helm chart
         run: ./scripts/infra/validate-chart.sh
@@ -53,8 +45,12 @@ jobs:
         run: ./scripts/infra/dry-run-upgrade.sh
       
       - name: Security scan with Trivy
-        run: |
-          trivy config ./infrastructure --severity HIGH,CRITICAL --exit-code 0
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: ./infrastructure
+          severity: HIGH,CRITICAL
+          exit-code: 0
 
   gitops-sync:
     needs: validate
@@ -63,12 +59,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Give execute permissions
-        run: chmod +x scripts/infra/*.sh
-      
       - name: Install yq
-        run: |
-          sudo snap install yq
+        run: sudo snap install yq
       
       - name: Update ArgoCD manifests
         run: |
