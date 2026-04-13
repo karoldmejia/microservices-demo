@@ -101,9 +101,9 @@ jobs:
       
       - name: Deploy to Okteto Dev Environment
         run: |
-          ./scripts/dev/deploy-dev.sh vote
-          ./scripts/dev/deploy-dev.sh worker
-          ./scripts/dev/deploy-dev.sh result
+          bash ./scripts/dev/deploy-dev.sh vote
+          bash ./scripts/dev/deploy-dev.sh worker
+          bash ./scripts/dev/deploy-dev.sh result
       
       - name: Run integration tests
         run: ./scripts/dev/integration-test.sh
