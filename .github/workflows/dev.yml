@@ -81,11 +81,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install Okteto
-        uses: okteto/setup-okteto@latest
+      - name: Install Okteto CLI
+        run: curl https://get.okteto.com -sSfL | sh
 
       - name: Okteto Login
-        run: okteto context use
+        run: okteto context use https://cloud.okteto.com
         env:
           OKTETO_TOKEN: ${{ secrets.OKTETO_TOKEN }}
 
