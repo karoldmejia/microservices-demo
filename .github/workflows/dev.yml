@@ -81,10 +81,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Install Okteto
+        uses: okteto/setup-okteto@latest
+
+      - name: Okteto Login
+        run: okteto context use
+        env:
+          OKTETO_TOKEN: ${{ secrets.OKTETO_TOKEN }}
+
       - name: Login to Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io/${{ github.repository_owner }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
