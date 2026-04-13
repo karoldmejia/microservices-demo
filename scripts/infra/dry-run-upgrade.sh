@@ -59,8 +59,3 @@ echo "  - Helm template: OK"
 echo "  - YAML syntax: OK"
 echo "  - kube-score: Completed (warnings can be ignored for now)"
 echo "  - helm lint: OK"
-
-echo ""
-EOF
-
-chmod +x scripts/infra/dry-run-upgrade.sh
