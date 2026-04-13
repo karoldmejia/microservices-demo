@@ -13,7 +13,7 @@ var express = require('express'),
 var port = process.env.PORT || 4000;
 
 io.sockets.on('connection', function (socket) {
-  socket.emit('message', { text: 'Welcome! Testing pipeline v2' });
+  socket.emit('message', { text: 'Welcome! Testing pipeline! ' });
 
   socket.on('subscribe', function (data) {
     socket.join(data.channel);
