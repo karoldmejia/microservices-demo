@@ -111,11 +111,20 @@ jobs:
           docker build -t worker:dev ./worker
           docker build -t result:dev ./result
 
-      - name: Deploy services
+      - name: Deploy vote service
         run: |
-          kubectl apply -f k8s/vote.yaml
-          kubectl apply -f k8s/worker.yaml
-          kubectl apply -f k8s/result.yaml
+          helm upgrade --install vote ./vote/chart \
+            --set image.tag=dev-$GITHUB_SHA
+
+      - name: Deploy worker service
+        run: |
+          helm upgrade --install worker ./worker/chart \
+            --set image.tag=dev-$GITHUB_SHA
+
+      - name: Deploy result service
+        run: |
+          helm upgrade --install result ./result/chart \
+            --set image.tag=dev-$GITHUB_SHA
 
       - name: Integration tests
         run: ./scripts/dev/integration-test.sh
