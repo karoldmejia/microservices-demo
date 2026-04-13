@@ -120,18 +120,15 @@ jobs:
         run: |
           helm upgrade --install vote ./vote/chart \
             --namespace infrastructure \
-            --set image.repository=vote \
-            --set image.tag=dev
+            --set image=vote:dev
 
           helm upgrade --install worker ./worker/chart \
             --namespace infrastructure \
-            --set image.repository=worker \
-            --set image.tag=dev
+            --set image=worker:dev
 
           helm upgrade --install result ./result/chart \
             --namespace infrastructure \
-            --set image.repository=result \
-            --set image.tag=dev
+            --set image=result:dev
 
       - name: Debug pods
         run: |
