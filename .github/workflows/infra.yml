@@ -16,6 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Give execute permissions to scripts
+        run: |
+          chmod +x scripts/infra/*.sh
+          chmod +x scripts/dev/*.sh
+      
       - name: Install tools
         run: |
           helm plugin install https://github.com/databus23/helm-diff
@@ -40,6 +45,9 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Give execute permissions
+        run: chmod +x scripts/infra/*.sh
       
       - name: Update ArgoCD manifests
         run: |
