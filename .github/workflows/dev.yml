@@ -103,7 +103,7 @@ jobs:
             --namespace infrastructure \
             --set postgresql.persistence.enabled=false \
             --set kafka.persistence.enabled=false
-            
+
       - name: Build Docker images
         run: |
           docker build -t vote:dev ./vote
@@ -132,6 +132,11 @@ jobs:
             --namespace infrastructure \
             --set image.repository=result \
             --set image.tag=dev
+
+      - name: Debug pods
+        run: |
+          kubectl get pods -n infrastructure
+          kubectl describe pods -n infrastructure
 
       - name: Wait for deployments
         run: |
