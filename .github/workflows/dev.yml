@@ -28,9 +28,21 @@ jobs:
       - name: Unit tests - Vote (Java)
         run: cd vote && mvn test
       
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Download Go dependencies
+        run: |
+          cd worker
+          go mod download
+
       - name: Unit tests - Worker (Go)
-        run: cd worker && go test -v ./...
-      
+        run: |
+          cd worker
+          go test -v ./...
+            
       - name: Unit tests - Result (Node.js)
         run: cd result && npm test
 
@@ -40,13 +52,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run Trivy vulnerability scanner (filesystem)
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: fs
           severity: HIGH,CRITICAL
 
       - name: Run Trivy vulnerability scanner (config)
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: config
           scan-ref: docker/
