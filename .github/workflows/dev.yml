@@ -75,43 +75,47 @@ jobs:
           scan-type: config
           scan-ref: ./result
 
-  build-and-deploy-dev:
-    needs: [lint-and-test, security-scan]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install Okteto CLI
-        run: curl https://get.okteto.com -sSfL | sh
+  deploy:
+      needs: [lint-and-test, security-scan]
+      runs-on: ubuntu-latest
 
-      - name: Okteto Login
-        run: okteto context use https://cloud.okteto.com
-        env:
-          OKTETO_TOKEN: ${{ secrets.OKTETO_TOKEN }}
+      steps:
+        - uses: actions/checkout@v4
 
-      - name: Login to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io/${{ github.repository_owner }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Build and push images
-        run: |
-          docker build -t $REGISTRY/vote:dev-$GITHUB_SHA ./vote
-          docker push $REGISTRY/vote:dev-$GITHUB_SHA
-          
-          docker build -t $REGISTRY/worker:dev-$GITHUB_SHA ./worker
-          docker push $REGISTRY/worker:dev-$GITHUB_SHA
-          
-          docker build -t $REGISTRY/result:dev-$GITHUB_SHA ./result
-          docker push $REGISTRY/result:dev-$GITHUB_SHA
-      
-      - name: Deploy to Okteto Dev Environment
-        run: |
-          bash ./scripts/dev/deploy-dev.sh vote
-          bash ./scripts/dev/deploy-dev.sh worker
-          bash ./scripts/dev/deploy-dev.sh result
-      
-      - name: Run integration tests
-        run: ./scripts/dev/integration-test.sh
+        - name: Install kubectl
+          uses: azure/setup-kubectl@v4
+
+        - name: Install Helm
+          uses: azure/setup-helm@v4
+
+        - name: Create Kind Cluster
+          uses: helm/kind-action@v1
+
+        - name: Deploy infrastructure (Kafka + Postgres)
+          run: |
+            kubectl create namespace infrastructure
+            helm upgrade --install infrastructure ./infrastructure \
+              --namespace infrastructure \
+              --set postgresql.persistence.enabled=false \
+              --set kafka.persistence.enabled=false
+
+        - name: Build Docker images
+          run: |
+            docker build -t vote:dev ./vote
+            docker build -t worker:dev ./worker
+            docker build -t result:dev ./result
+
+        - name: Load images into Kind
+          run: |
+            kind load docker-image vote:dev
+            kind load docker-image worker:dev
+            kind load docker-image result:dev
+
+        - name: Deploy services
+          run: |
+            kubectl apply -f k8s/vote.yaml
+            kubectl apply -f k8s/worker.yaml
+            kubectl apply -f k8s/result.yaml
+
+        - name: Integration tests
+          run: ./scripts/dev/integration-test.sh
