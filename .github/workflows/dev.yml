@@ -103,12 +103,35 @@ jobs:
             --namespace infrastructure \
             --set postgresql.persistence.enabled=false \
             --set kafka.persistence.enabled=false
+            
+      - name: Build Docker images
+        run: |
+          docker build -t vote:dev ./vote
+          docker build -t worker:dev ./worker
+          docker build -t result:dev ./result
+
+      - name: Load images into Kind
+        run: |
+          kind load docker-image vote:dev --name kind
+          kind load docker-image worker:dev --name kind
+          kind load docker-image result:dev --name kind
 
       - name: Deploy services
         run: |
-          helm upgrade --install vote ./vote/chart --namespace infrastructure
-          helm upgrade --install worker ./worker/chart --namespace infrastructure
-          helm upgrade --install result ./result/chart --namespace infrastructure
+          helm upgrade --install vote ./vote/chart \
+            --namespace infrastructure \
+            --set image.repository=vote \
+            --set image.tag=dev
+
+          helm upgrade --install worker ./worker/chart \
+            --namespace infrastructure \
+            --set image.repository=worker \
+            --set image.tag=dev
+
+          helm upgrade --install result ./result/chart \
+            --namespace infrastructure \
+            --set image.repository=result \
+            --set image.tag=dev
 
       - name: Wait for deployments
         run: |
